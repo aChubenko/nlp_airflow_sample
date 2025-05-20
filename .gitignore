@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+*.env
+
+# PyCharm project files
+.idea/
+
+# Airflow logs and DB
+logs/
+airflow.db
+unittests.cfg
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Data artifacts
+data/*.csv
+data/*.parquet
+data/*.db
+data/*.sqlite
+data/*.json
+data/*.xlsx
+data/*.pdf
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables / secrets
