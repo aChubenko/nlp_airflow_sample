@@ -1,27 +1,13 @@
 from xml.etree.ElementTree import Element
-
 from airflow.decorators import task
 from datetime import datetime
 import requests
 import logging
 import psycopg2
 import xml.etree.ElementTree as ET
+from airflow.utils.configs import url_first_year_page_template, url_resumption_token_template, PG_CONN, ns
 
 logger = logging.getLogger(__name__)
-
-PG_CONN = {
-    "dbname": "arxiv",
-    "user": "airflow",
-    "password": "airflow",
-    "host": "postgres",
-    "port": 5432,
-}
-
-ns = {'oai': 'http://www.openarchives.org/OAI/2.0/',
-              'arxiv': 'http://arxiv.org/OAI/arXiv/'}
-
-url_first_year_page_template = "http://export.arxiv.org/oai2?verb=ListRecords&from={year}-01-01&until={year}-12-31&metadataPrefix=arXiv"
-url_resumption_token_template = "http://export.arxiv.org/oai2?verb=ListRecords&resumptionToken={resumption_token}"
 
 @task
 def scrape_first_year_page_articles_list(year: int):
@@ -29,8 +15,8 @@ def scrape_first_year_page_articles_list(year: int):
     process_articles_list_scrapping(url)
 
 @task
-def scrape_resumption_token_articles_list(resumptionToken: str):
-    url = url_resumption_token_template.format(resumptionToken = resumptionToken)
+def scrape_resumption_token_articles_list(resumption_token: str):
+    url = url_resumption_token_template.format(resumption_token = resumption_token)
     process_articles_list_scrapping(url)
 
 def process_articles_list_scrapping(url: str):
@@ -45,7 +31,17 @@ def parse_resumption_token(root: Element):
     return root.find(".//oai:resumptionToken", ns).text.strip()
 
 def move_to_next_page(token: str):
-    scrape_resumption_token_articles_list(token)
+    scrape_resumption_token_articles_list.expand(resumption_token = token)
+    conf = dag_run.conf or {}
+    new_conf = conf.copy()
+    new_conf["page_number"] = int(conf.get("page_number", 0)) + 1
+    new_conf["token"] = token
+    trigger_goodbye = TriggerDagRunOperator(
+        task_id="trigger_goodbye",
+        trigger_dag_id="goodbye_dag",
+        conf=new_conf,
+        wait_for_completion=False,  # пусть работает независимо
+    )
 
 def make_request(url: str):
     try:

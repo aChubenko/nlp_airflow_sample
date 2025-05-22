@@ -34,10 +34,14 @@ services:
     depends_on:
       - postgres
     volumes:
-      - ./dags:/opt/airflow/dags
+      - .airflow:/opt/airflow/dags
       - ./scripts:/opt/airflow/scripts
       - ./data:/opt/airflow/data
-    command: bash -c "airflow db migrate && airflow webserver & airflow scheduler"
+    command:  >
+      bash -c "
+        airflow db init &&
+        airflow users create --username admin --firstname Air --lastname Flow --role Admin --email admin@example.com --password admin &&
+        airflow webserver & airflow scheduler"
     ports:
       - "8080:8080"
 
