@@ -5,8 +5,8 @@ pdf_url = "https://arxiv.org/pdf/{arxiv_id}.pdf"
 
 PG_CONN = {
     "dbname": "arxiv",
-    "user": "airflow_pipeline",
-    "password": "airflow_pipeline",
+    "user": "airflow",
+    "password": "airflow",
     "host": "postgres",
     "port": 5432,
 }

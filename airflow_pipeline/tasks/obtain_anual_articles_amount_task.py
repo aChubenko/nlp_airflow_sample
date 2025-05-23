@@ -30,7 +30,6 @@ def parse_resumption_token(root: Element):
     return root.find(".//oai:resumptionToken", ns).text.strip()
 
 def move_to_next_page(token: str):
-    scrape_resumption_token_articles_list.expand(resumption_token = token)
     conf = dag_run.conf or {}
     new_conf = conf.copy()
     new_conf["page_number"] = int(conf.get("page_number", 0)) + 1

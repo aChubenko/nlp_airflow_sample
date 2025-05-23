@@ -5,29 +5,35 @@ import psycopg2
 import requests
 import time
 from io import BytesIO
-from minio import Minio
-from minio.error import S3Error
+import boto3
+from botocore.exceptions import ClientError
 
 # Конфигурация
 PG_CONN = {
     "dbname": "arxiv",
-    "user": "airflow_pipeline",
-    "password": "airflow_pipeline",
+    "user": "airflow",
+    "password": "airflow",
     "host": "postgres",
     "port": 5432,
 }
 
-MINIO_CLIENT = Minio(
-    "minio:9000",
-    access_key="minioadmin",
-    secret_key="minioadmin",
-    secure=False
+AWS_ACCESS_KEY = "your_access_key"
+AWS_SECRET_KEY = "your_secret_key"
+AWS_REGION = "eu-central-1"
+BUCKET = "raw-pdf-articles"
+
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=AWS_ACCESS_KEY,
+    aws_secret_access_key=AWS_SECRET_KEY,
+    region_name=AWS_REGION
 )
-BUCKET = "raw_pdf_articles"
 
 def ensure_bucket():
-    if not MINIO_CLIENT.bucket_exists(BUCKET):
-        MINIO_CLIENT.make_bucket(BUCKET)
+    try:
+        s3.head_bucket(Bucket=BUCKET)
+    except ClientError:
+        s3.create_bucket(Bucket=BUCKET)
 
 def download_and_upload():
     ensure_bucket()
@@ -58,18 +64,17 @@ def download_and_upload():
 
                     if response.status_code == 200:
                         data = BytesIO(response.content)
-                        MINIO_CLIENT.put_object(
-                            bucket_name=BUCKET,
-                            object_name=f"{arxiv_id}.pdf",
-                            data=data,
-                            length=len(response.content),
-                            content_type="application/pdf"
+                        s3.upload_fileobj(
+                            Fileobj=data,
+                            Bucket=BUCKET,
+                            Key=f"{arxiv_id}.pdf",
+                            ExtraArgs={"ContentType": "application/pdf"}
                         )
                         cur.execute("""
                             UPDATE arxiv_papers SET status = 'done'
                             WHERE id = %s
                         """, (arxiv_id,))
-                        print(f"✅ Загружено в MinIO: {arxiv_id}.pdf")
+                        print(f"✅ Загружено в S3: {arxiv_id}.pdf")
                     else:
                         raise Exception(f"HTTP {response.status_code}")
 
@@ -83,19 +88,20 @@ def download_and_upload():
                 conn.commit()
 
 # Airflow DAG
+
 default_args = {
-    "owner": "airflow_pipeline",
+    "owner": "airflow",
     "retries": 1,
     "retry_delay": timedelta(minutes=3),
 }
 
 with DAG(
-    dag_id="arxiv_download_pdfs_to_minio",
+    dag_id="arxiv_download_pdfs_to_s3",
     default_args=default_args,
     start_date=datetime(2024, 1, 1),
     schedule_interval="*/15 * * * *",
     catchup=False,
-    tags=["arxiv", "download", "minio"]
+    tags=["arxiv", "download", "s3"]
 ) as dag:
 
     download_task = PythonOperator(
