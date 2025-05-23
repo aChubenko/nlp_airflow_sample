@@ -7,8 +7,8 @@ import xml.etree.ElementTree as ET
 
 PG_CONN = {
     "dbname": "arxiv",
-    "user": "airflow",
-    "password": "airflow",
+    "user": "airflow_pipeline",
+    "password": "airflow_pipeline",
     "host": "postgres",
     "port": 5432,
 }
@@ -109,7 +109,7 @@ def process_next_year():
 
 # DAG
 default_args = {
-    "owner": "airflow",
+    "owner": "airflow_pipeline",
     "retries": 1,
     "retry_delay": timedelta(minutes=3),
 }

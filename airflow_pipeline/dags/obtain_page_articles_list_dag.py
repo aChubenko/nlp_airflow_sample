@@ -1,4 +1,4 @@
-from airflow.dags.obtain_anual_articles_amount_task import scrape_resumption_token_articles_list
+from airflow_pipeline.dags.obtain_anual_articles_amount_task import scrape_resumption_token_articles_list
 from airflow.decorators import dag
 
 @dag

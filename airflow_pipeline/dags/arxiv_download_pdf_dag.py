@@ -11,8 +11,8 @@ from minio.error import S3Error
 # Конфигурация
 PG_CONN = {
     "dbname": "arxiv",
-    "user": "airflow",
-    "password": "airflow",
+    "user": "airflow_pipeline",
+    "password": "airflow_pipeline",
     "host": "postgres",
     "port": 5432,
 }
@@ -84,7 +84,7 @@ def download_and_upload():
 
 # Airflow DAG
 default_args = {
-    "owner": "airflow",
+    "owner": "airflow_pipeline",
     "retries": 1,
     "retry_delay": timedelta(minutes=3),
 }

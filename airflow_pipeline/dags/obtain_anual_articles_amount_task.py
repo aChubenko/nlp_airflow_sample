@@ -1,11 +1,10 @@
 from xml.etree.ElementTree import Element
 from airflow.decorators import task
-from datetime import datetime
 import requests
 import logging
 import psycopg2
 import xml.etree.ElementTree as ET
-from airflow.utils.configs import url_first_year_page_template, url_resumption_token_template, PG_CONN, ns
+from airflow_pipeline.utils.configs import url_first_year_page_template, url_resumption_token_template, PG_CONN, ns
 
 logger = logging.getLogger(__name__)
 

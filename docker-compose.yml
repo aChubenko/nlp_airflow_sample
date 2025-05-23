@@ -34,7 +34,7 @@ services:
     depends_on:
       - postgres
     volumes:
-      - .airflow:/opt/airflow/dags
+      - ./airflow_pipeline:/opt/airflow/dags
       - ./scripts:/opt/airflow/scripts
       - ./data:/opt/airflow/data
     command:  >
