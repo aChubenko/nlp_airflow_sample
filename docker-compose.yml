@@ -33,6 +33,8 @@ services:
       AIRFLOW__WEBSERVER__SECRET_KEY: "secret"
     depends_on:
       - postgres
+    env_file:
+      - .env
     volumes:
       - ./airflow_pipeline:/opt/airflow/dags/airflow_pipeline
       - ./scripts:/opt/airflow/scripts
