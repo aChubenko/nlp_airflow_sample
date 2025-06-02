@@ -91,6 +91,6 @@ def analyze_one_article(identifier: str) -> None:
 )
 def analyze_translated_articles_dag():
     ids = get_identifiers_to_process()
-    ids.map(analyze_one_article)
+    analyze_one_article.expand(identifier=ids)
 
 dag_instance = analyze_translated_articles_dag()

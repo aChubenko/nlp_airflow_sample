@@ -8,6 +8,7 @@ from io import BytesIO
 from PyPDF2 import PdfReader
 from openai import OpenAI
 
+# Подключение к Postgres
 PG_CONN = {
     "dbname": "arxiv",
     "user": "airflow",
@@ -16,13 +17,15 @@ PG_CONN = {
     "port": 5432,
 }
 
+# Настройки MinIO
 MINIO_ENDPOINT = "http://minio:9000"
 MINIO_INPUT_BUCKET = "raw-articles"
 MINIO_OUTPUT_BUCKET = "translated-articles"
 MINIO_ACCESS_KEY = os.getenv("MINIO_ROOT_USER", "minioadmin")
 MINIO_SECRET_KEY = os.getenv("MINIO_ROOT_PASSWORD", "minioadmin")
-OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 
+# Ключ OpenAI
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_KEY)
 
 @dag(
@@ -84,8 +87,23 @@ def translate_articles_to_ukrainian():
                 )
                 translated_text = response.choices[0].message.content.strip()
 
-                s3.put_object(Bucket=MINIO_OUTPUT_BUCKET, Key=f"{identifier}.txt", Body=translated_text.encode("utf-8"))
+                s3.put_object(
+                    Bucket=MINIO_OUTPUT_BUCKET,
+                    Key=f"{identifier}.txt",
+                    Body=translated_text.encode("utf-8")
+                )
                 self.log.info(f"✅ Uploaded {identifier}.txt to translated bucket")
+
+                # ✅ Обновляем статус в PostgreSQL
+                with psycopg2.connect(**PG_CONN) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            UPDATE arxiv_articles
+                            SET status = 'translate_success'
+                            WHERE identifier = %s;
+                        """, (identifier,))
+                        conn.commit()
+                        self.log.info(f"🟢 Status updated to translate_success for {identifier}")
 
             except Exception as e:
                 self.log.error(f"❌ Failed to process {identifier}: {e}")
