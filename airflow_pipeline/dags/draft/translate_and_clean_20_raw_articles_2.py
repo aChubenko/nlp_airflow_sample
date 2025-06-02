@@ -47,7 +47,7 @@ def clean_success_articles_to_s3_2():
             with conn.cursor() as cur:
                 cur.execute("""
                     SELECT identifier FROM arxiv_articles
-                    WHERE status = 'success'
+                    WHERE status = 'download_success'
                     LIMIT 20;
                 """)
                 rows = cur.fetchall()
@@ -55,7 +55,7 @@ def clean_success_articles_to_s3_2():
                 return [r[0] for r in rows]
 
     @task()
-    def clean_and_upload_sequential(identifiers: list[str], **context):
+    def translate_and_save(identifiers: list[str], **context):
         self = context['ti']
         s3 = boto3.client(
             "s3",
@@ -65,8 +65,8 @@ def clean_success_articles_to_s3_2():
         )
 
         for identifier in identifiers:
-            self.log.info(f"⬇️ Downloading PDF for {identifier}")
             try:
+                self.log.info(f"⬇️ Downloading PDF for {identifier}")
                 response = s3.get_object(Bucket=MINIO_INPUT_BUCKET, Key=f"{identifier}.pdf")
                 pdf_bytes = response['Body'].read()
 
@@ -80,18 +80,46 @@ def clean_success_articles_to_s3_2():
                 response = client.chat.completions.create(
                     model="gpt-4-turbo",
                     messages=[
-                        {"role": "system", "content": "Переклади на українську мову науковий текст нижче. Зберігай стиль та терміни."},
+                        {"role": "system",
+                         "content": "Переклади на українську мову науковий текст нижче. Зберігай стиль та терміни."},
                         {"role": "user", "content": full_text[:8000]}
                     ],
                     temperature=0.3
                 )
                 translated_text = response.choices[0].message.content.strip()
 
-                s3.put_object(Bucket=MINIO_OUTPUT_BUCKET, Key=f"{identifier}.txt", Body=translated_text.encode("utf-8"))
-                self.log.info(f"✅ Uploaded {identifier} to cleaned bucket")
+                s3.put_object(
+                    Bucket=MINIO_OUTPUT_BUCKET,
+                    Key=f"{identifier}.txt",
+                    Body=translated_text.encode("utf-8")
+                )
+                self.log.info(f"✅ Uploaded {identifier}.txt to translated bucket")
+
+                # ✅ Обновляем статус на translate_success
+                with psycopg2.connect(**PG_CONN) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            UPDATE arxiv_articles
+                            SET status = 'translate_success'
+                            WHERE identifier = %s;
+                        """, (identifier,))
+                        conn.commit()
+                        self.log.info(f"🟢 Status updated: translate_success for {identifier}")
 
             except Exception as e:
                 self.log.error(f"❌ Failed to process {identifier}: {e}")
+                try:
+                    with psycopg2.connect(**PG_CONN) as conn:
+                        with conn.cursor() as cur:
+                            cur.execute("""
+                                UPDATE arxiv_articles
+                                SET status = 'translate_error'
+                                WHERE identifier = %s;
+                            """, (identifier,))
+                            conn.commit()
+                            self.log.info(f"🔴 Status updated: translate_error for {identifier}")
+                except Exception as db_err:
+                    self.log.error(f"⚠️ DB status update failed for {identifier}: {db_err}")
 
             self.log.info("⏳ Waiting 60 seconds before next...")
             time.sleep(60)
