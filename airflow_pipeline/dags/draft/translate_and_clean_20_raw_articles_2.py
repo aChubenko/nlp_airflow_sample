@@ -29,12 +29,13 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @dag(
     dag_id="clean_success_articles_to_s3_2",
-    schedule_interval="@hourly",
+    schedule_interval=None,
     start_date=datetime(2025, 1, 1),
     catchup=False,
     max_active_runs=1,
     default_args={"retries": 1, "retry_delay": timedelta(minutes=5)},
-    tags=["arxiv", "minio", "nlp"]
+    is_paused_upon_creation=True,
+    tags=["draft", "experimental"]
 )
 def clean_success_articles_to_s3_2():
 

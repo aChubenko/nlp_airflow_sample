@@ -21,7 +21,8 @@ PG_CONN = {
     catchup=False,
     max_active_runs=1,
     default_args={"retries": 1, "retry_delay": timedelta(minutes=5)},
-    tags=["analytics", "postgres"]
+    is_paused_upon_creation=True,
+    tags=["draft", "experimental"]
 )
 def analytics_translated_articles():
 

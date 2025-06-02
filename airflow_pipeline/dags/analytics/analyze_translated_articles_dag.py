@@ -83,9 +83,10 @@ def analyze_one_article(identifier: str) -> None:
         conn.close()
 
 @dag(
-    schedule_interval='@hourly',
+    schedule_interval=None,
     start_date=datetime(2024, 1, 1),
     catchup=False,
+    is_paused_upon_creation=True,
     tags=["arxiv", "analytics"]
 )
 def analyze_translated_articles_dag():

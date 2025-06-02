@@ -118,9 +118,10 @@ with DAG(
     dag_id="arxiv_oai_index_years",
     default_args=default_args,
     start_date=datetime(2024, 1, 1),
-    schedule_interval="* * * * *",
+    schedule_interval=None,
     catchup=False,
-    tags=["arxiv", "index", "years"]
+    is_paused_upon_creation=True,
+    tags=["draft", "experimental"]
 ) as dag:
 
     index_next_year = PythonOperator(
