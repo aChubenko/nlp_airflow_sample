@@ -22,7 +22,6 @@ MINIO_OUTPUT_BUCKET = "translated-articles"
 MINIO_ACCESS_KEY = os.getenv("MINIO_ROOT_USER", "minioadmin")
 MINIO_SECRET_KEY = os.getenv("MINIO_ROOT_PASSWORD", "minioadmin")
 
-# Ключ OpenAI
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_KEY)
 
@@ -35,7 +34,7 @@ client = OpenAI(api_key=OPENAI_KEY)
     default_args={"retries": 1, "retry_delay": timedelta(minutes=5)},
     tags=["arxiv", "translation", "openai"]
 )
-def translate_articles_to_ukrainian():
+def translate_articles_to_ukrainian_dag():
 
     @task()
     def get_successful_articles(**context):
@@ -45,14 +44,14 @@ def translate_articles_to_ukrainian():
             with conn.cursor() as cur:
                 cur.execute("""
                     SELECT identifier FROM arxiv_articles
-                    WHERE status = 'success'
+                    WHERE status = 'download_success'
                     LIMIT 20;
                 """)
                 rows = cur.fetchall()
                 self.log.info(f"🔎 Retrieved {len(rows)} articles to translate.")
                 return [r[0] for r in rows]
 
-    @task()
+    @task(pool="sequential_pool")
     def translate_and_save(identifiers: list[str], **context):
         self = context['ti']
         s3 = boto3.client(
@@ -102,13 +101,22 @@ def translate_articles_to_ukrainian():
                         conn.commit()
                         self.log.info(f"🟢 Status updated to translate_success for {identifier}")
 
+
             except Exception as e:
                 self.log.error(f"❌ Failed to process {identifier}: {e}")
-
+                with psycopg2.connect(**PG_CONN) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            UPDATE arxiv_articles
+                            SET status = 'translate_error'
+                            WHERE identifier = %s;
+                        """, (identifier,))
+                        conn.commit()
+                raise e
             self.log.info("⏳ Waiting 60 seconds before next...")
             time.sleep(60)
 
     ids = get_successful_articles()
     translate_and_save(ids)
 
-dag = translate_articles_to_ukrainian()
+dag = translate_articles_to_ukrainian_dag()
