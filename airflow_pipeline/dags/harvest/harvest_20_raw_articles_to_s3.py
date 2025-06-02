@@ -58,7 +58,7 @@ def fetch_20_raw_articles_to_s3():
         identifier = record["identifier"]
         pdf_url = record["pdf_url"]
         self.log.info(f"⬇️ Downloading PDF for {identifier} from {pdf_url}")
-        status = "success"
+        status = "download_success"
         try:
             resp = requests.get(pdf_url, timeout=30)
             resp.raise_for_status()
@@ -72,7 +72,7 @@ def fetch_20_raw_articles_to_s3():
             self.log.info(f"✅ Uploaded {identifier}.pdf to MinIO bucket '{MINIO_BUCKET}'")
         except Exception as e:
             self.log.error(f"❌ Failed to process {identifier}: {e}")
-            status = "error"
+            status = "download_error"
         return (identifier, status)
 
     @task()

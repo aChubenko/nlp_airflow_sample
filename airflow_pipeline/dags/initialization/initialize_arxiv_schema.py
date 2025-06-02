@@ -14,18 +14,6 @@ PG_CONN = {
 def create_tables():
     queries = [
         """
-        CREATE TABLE IF NOT EXISTS arxiv_papers (
-            id TEXT PRIMARY KEY,
-            title TEXT,
-            summary TEXT,
-            published TIMESTAMP,
-            category TEXT,
-            pdf_url TEXT,
-            status TEXT DEFAULT 'pending',
-            error_message TEXT
-        );
-        """,
-        """
         CREATE TABLE IF NOT EXISTS arxiv_articles (
             identifier TEXT PRIMARY KEY,
             title TEXT,
@@ -38,14 +26,13 @@ def create_tables():
             status TEXT DEFAULT 'pending'
         );
         """,
+        """CREATE INDEX IF NOT EXISTS idx_arxiv_status ON arxiv_articles(status);"""
         """
-        CREATE TABLE IF NOT EXISTS arxiv_amount_of_pupications_by_year (
-            year INT PRIMARY KEY,
-            complete_list_size INT,
-            resumption_token TEXT,
-            cursor INT,
-            status TEXT,
-            updated_at TIMESTAMP
+        CREATE TABLE IF NOT EXISTS translated_articles_analytics (
+            identifier TEXT PRIMARY KEY,
+            research_field TEXT,
+            word_count INTEGER,
+            analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """
     ]
