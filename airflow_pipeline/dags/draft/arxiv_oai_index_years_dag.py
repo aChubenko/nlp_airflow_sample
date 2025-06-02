@@ -118,7 +118,7 @@ with DAG(
     dag_id="arxiv_oai_index_years",
     default_args=default_args,
     start_date=datetime(2024, 1, 1),
-    schedule_interval="* * * * *",  # каждую минуту
+    schedule_interval="* * * * *",
     catchup=False,
     tags=["arxiv", "index", "years"]
 ) as dag:

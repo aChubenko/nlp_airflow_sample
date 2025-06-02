@@ -2,7 +2,7 @@ from airflow.decorators import task
 import logging
 
 from airflow_pipeline.domain.scraping import make_request, parse_elements, save_records_to_db, parse_resumption_token
-from airflow_pipeline.utils.configs import url_first_year_page_template, url_resumption_token_template
+from airflow_pipeline.shared.accesses import url_first_year_page_template, url_resumption_token_template
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,6 @@ from io import BytesIO
 from PyPDF2 import PdfReader
 from openai import OpenAI
 
-# Конфигурации
 PG_CONN = {
     "dbname": "arxiv",
     "user": "airflow",

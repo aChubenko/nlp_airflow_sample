@@ -1,4 +1,4 @@
-# dags/harvest_arxiv_dag.py
+# dags/fetch_articles_identifiers_per_year_to_db.py
 
 from __future__ import annotations
 from airflow.decorators import dag
