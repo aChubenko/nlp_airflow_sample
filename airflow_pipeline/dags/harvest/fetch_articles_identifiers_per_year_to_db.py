@@ -18,7 +18,7 @@ def get_pg_conn() -> Dict[str, str]:
 @dag(
     dag_id="harvest_arxiv_multiple_years",
     start_date=datetime(2025, 1, 1),
-    schedule_interval=None,
+    schedule_interval="@daily",
     catchup=False,
     default_args={
         "retries": 2,

@@ -80,11 +80,11 @@ class HarvestArxivOperator(BaseOperator):
                 rec["title"],  # <title>
                 rec["abstract"],  # <abstract>
                 rec["created"],  # <created> (published)
-                rec.get("authors") or [],  # authors: список → TEXT[]
+                rec.get("authors") or [],  # authors: list → TEXT[]
                 rec.get("datestamp", ""),  # <datestamp> (updated)
                 rec.get("categories", ""),  # <categories>
                 rec.get("pdf_url", f"https://arxiv.org/pdf/{rec['id']}.pdf"),  # fallback
-                "pending"  # статус по умолчанию
+                "pending"
             )
             for rec in batch
         ]
@@ -93,9 +93,9 @@ class HarvestArxivOperator(BaseOperator):
             with psycopg2.connect(**self.pg_conn) as conn:
                 with conn.cursor() as cur:
                     execute_values(cur, insert_query, values)
-                    self.log.info(f"✅ save_batch_to_db: сохранено {cur.rowcount} строк.")
+                    self.log.info(f"✅ save_batch_to_db: {cur.rowcount}")
         except DatabaseError as e:
-            self.log.error(f"❌ save_batch_to_db: ошибка при вставке в БД — {e}")
+            self.log.error(f"❌ save_batch_to_db: insert error — {e}")
             raise
 
     def execute(self, context):
@@ -128,21 +128,21 @@ class HarvestArxivOperator(BaseOperator):
                     "pdf_url": f"https://arxiv.org/pdf/{meta.get('id', [''])[0]}.pdf"
                 })
                 if len(buffer) >= 1000:
-                    self.log.info(f"📦 Сохраняем 1000 записей...")
+                    self.log.info(f"📦 Saving 1000 records...")
                     self.save_batch_to_db(buffer)
                     total += len(buffer)
                     buffer = []
 
             token = records.resumption_token
             if token:
-                self.log.info(f"➡️ Переход по resumptionToken: {token}")
+                self.log.info(f"➡️ Transition with resumptionToken: {token}")
                 time.sleep(10)
                 records = self.safe_list_records(
                     metadataPrefix="arXiv",
                     resumptionToken=token
                 )
             else:
-                self.log.info("✅ Все страницы обработаны.")
+                self.log.info("✅ All pages processed")
                 break
 
         if buffer:

@@ -114,7 +114,7 @@ def translate_articles_to_ukrainian_dag():
                         conn.commit()
                 raise e
             self.log.info("⏳ Waiting 60 seconds before next...")
-            time.sleep(60)
+            time.sleep(60) #helps to avoid chatgpt api rate limit
 
     ids = get_successful_articles()
     translate_and_save(ids)

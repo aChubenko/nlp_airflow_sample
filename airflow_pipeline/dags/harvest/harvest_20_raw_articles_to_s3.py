@@ -52,7 +52,7 @@ def fetch_20_raw_articles_to_s3():
                 self.log.info(f"🔎 Retrieved {len(rows)} articles to process.")
                 return [{"identifier": r[0], "pdf_url": r[1]} for r in rows]
 
-    @task()
+    @task(pool="sequential_pool")
     def download_and_upload(record, **context):
         self = context['ti']
         identifier = record["identifier"]
